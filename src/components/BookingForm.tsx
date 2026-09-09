@@ -34,6 +34,7 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
   const [error, setError] = useState('');
   const [indexTouched, setIndexTouched] = useState(false);
 
+  const today = new Date().toLocaleDateString('en-CA');
   const INDEX_REGEX = /^ICT\/\d{2}\/\d{3}$/;
   const indexError = indexTouched && !INDEX_REGEX.test(studentIndex.trim());
   const indexErrorMsg = !studentIndex.trim()
@@ -191,6 +192,7 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              min={today}
               required
               className={inputBase}
             />
