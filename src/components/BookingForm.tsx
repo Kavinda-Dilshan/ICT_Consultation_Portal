@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useConsultations } from '@/context/ConsultationContext';
+import type { Consultation } from '@/context/ConsultationContext';
 
 const LECTURERS = [
   'Dr. Samantha Perera',
@@ -20,10 +21,11 @@ const LECTURERS = [
 
 interface BookingFormProps {
   onSuccess: () => void;
+  onConflict: () => void;
 }
 
-export default function BookingForm({ onSuccess }: BookingFormProps) {
-  const { addConsultation } = useConsultations();
+export default function BookingForm({ onSuccess, onConflict }: BookingFormProps) {
+  const { consultations, addConsultation } = useConsultations();
   const [studentName, setStudentName] = useState('');
   const [studentIndex, setStudentIndex] = useState('');
   const [lecturer, setLecturer] = useState('');
@@ -59,8 +61,20 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
       return;
     }
 
-    setSubmitting(true);
     const appointmentAt = new Date(`${date}T${time}`).toISOString();
+
+    const hasConflict = consultations.some(
+      (c: Consultation) =>
+        c.lecturer === lecturer &&
+        new Date(c.appointment_at).toISOString() === appointmentAt,
+    );
+
+    if (hasConflict) {
+      onConflict();
+      return;
+    }
+
+    setSubmitting(true);
 
     const { data, error: insertError } = await supabase
       .from('consultations')

@@ -8,7 +8,13 @@ import MyBookings from '@/components/MyBookings';
 import RoleSelect from '@/components/RoleSelect';
 import { ConsultationProvider } from '@/context/ConsultationContext';
 
-function StudentPortal({ onSuccess }: { onSuccess: () => void }) {
+function StudentPortal({
+  onSuccess,
+  onConflict,
+}: {
+  onSuccess: () => void;
+  onConflict: () => void;
+}) {
   return (
     <main className="px-4 py-10 sm:py-14">
       <div className="mx-auto w-full max-w-lg space-y-6">
@@ -23,7 +29,7 @@ function StudentPortal({ onSuccess }: { onSuccess: () => void }) {
             </p>
           </div>
 
-          <BookingForm onSuccess={onSuccess} />
+          <BookingForm onSuccess={onSuccess} onConflict={onConflict} />
         </div>
 
         <MyBookings />
@@ -39,7 +45,10 @@ function StudentPortal({ onSuccess }: { onSuccess: () => void }) {
 export default function App() {
   const [role, setRole] = useState<Role | null>(null);
   const [view, setView] = useState<View>('student');
-  const [toastVisible, setToastVisible] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    variant: 'success' | 'error';
+  } | null>(null);
 
   const handleRoleSelect = (selectedRole: Role) => {
     setRole(selectedRole);
@@ -69,17 +78,44 @@ export default function App() {
         />
 
         {view === 'student' ? (
-          <StudentPortal onSuccess={() => setToastVisible(true)} />
+          <StudentPortal
+            onSuccess={() =>
+              setToast({
+                message: 'Appointment booked successfully!',
+                variant: 'success',
+              })
+            }
+            onConflict={() =>
+              setToast({
+                message: 'This time slot is already taken.',
+                variant: 'error',
+              })
+            }
+          />
         ) : role === 'lecturer' ? (
           <Dashboard />
         ) : (
-          <StudentPortal onSuccess={() => setToastVisible(true)} />
+          <StudentPortal
+            onSuccess={() =>
+              setToast({
+                message: 'Appointment booked successfully!',
+                variant: 'success',
+              })
+            }
+            onConflict={() =>
+              setToast({
+                message: 'This time slot is already taken.',
+                variant: 'error',
+              })
+            }
+          />
         )}
 
         <Toast
-          message="Appointment booked successfully!"
-          visible={toastVisible}
-          onClose={() => setToastVisible(false)}
+          message={toast?.message ?? ''}
+          variant={toast?.variant}
+          visible={!!toast}
+          onClose={() => setToast(null)}
         />
       </div>
     </ConsultationProvider>
