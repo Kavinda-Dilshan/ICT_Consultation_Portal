@@ -34,7 +34,11 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
   const [error, setError] = useState('');
   const [indexTouched, setIndexTouched] = useState(false);
 
-  const indexError = indexTouched && !studentIndex.trim();
+  const INDEX_REGEX = /^ICT\/\d{2}\/\d{3}$/;
+  const indexError = indexTouched && !INDEX_REGEX.test(studentIndex.trim());
+  const indexErrorMsg = !studentIndex.trim()
+    ? 'Student Index Number is required.'
+    : 'Format must be ICT/XX/XXX (e.g. ICT/22/123).';
 
   const resetForm = () => {
     setStudentName('');
@@ -49,7 +53,7 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
     e.preventDefault();
     setError('');
 
-    if (!studentIndex.trim()) {
+    if (!INDEX_REGEX.test(studentIndex.trim())) {
       setIndexTouched(true);
       return;
     }
@@ -116,7 +120,7 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
             value={studentIndex}
             onChange={(e) => {
               setStudentIndex(e.target.value);
-              if (e.target.value.trim()) setIndexTouched(false);
+              if (INDEX_REGEX.test(e.target.value.trim())) setIndexTouched(false);
             }}
             onBlur={() => setIndexTouched(true)}
             placeholder="ICT/XX/XXX"
@@ -130,7 +134,7 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
         </div>
         {indexError && (
           <p className="mt-1.5 text-xs font-medium text-red-500">
-            Student Index Number is required.
+            {indexErrorMsg}
           </p>
         )}
       </div>
