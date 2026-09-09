@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useConsultations } from '@/context/ConsultationContext';
+import type { Consultation } from '@/context/ConsultationContext';
 
 const LECTURERS = [
   'Dr. Samantha Perera',
@@ -20,10 +21,11 @@ const LECTURERS = [
 
 interface BookingFormProps {
   onSuccess: () => void;
+  onConflict: () => void;
 }
 
-export default function BookingForm({ onSuccess }: BookingFormProps) {
-  const { addConsultation } = useConsultations();
+export default function BookingForm({ onSuccess, onConflict }: BookingFormProps) {
+  const { consultations, addConsultation } = useConsultations();
   const [studentName, setStudentName] = useState('');
   const [studentIndex, setStudentIndex] = useState('');
   const [lecturer, setLecturer] = useState('');
@@ -34,7 +36,12 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
   const [error, setError] = useState('');
   const [indexTouched, setIndexTouched] = useState(false);
 
-  const indexError = indexTouched && !studentIndex.trim();
+  const today = new Date().toLocaleDateString('en-CA');
+  const INDEX_REGEX = /^ICT\/\d{2}\/\d{3}$/;
+  const indexError = indexTouched && !INDEX_REGEX.test(studentIndex.trim());
+  const indexErrorMsg = !studentIndex.trim()
+    ? 'Student Index Number is required.'
+    : 'Format must be ICT/XX/XXX (e.g. ICT/22/123).';
 
   const resetForm = () => {
     setStudentName('');
@@ -49,13 +56,25 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
     e.preventDefault();
     setError('');
 
-    if (!studentIndex.trim()) {
+    if (!INDEX_REGEX.test(studentIndex.trim())) {
       setIndexTouched(true);
       return;
     }
 
-    setSubmitting(true);
     const appointmentAt = new Date(`${date}T${time}`).toISOString();
+
+    const hasConflict = consultations.some(
+      (c: Consultation) =>
+        c.lecturer === lecturer &&
+        new Date(c.appointment_at).toISOString() === appointmentAt,
+    );
+
+    if (hasConflict) {
+      onConflict();
+      return;
+    }
+
+    setSubmitting(true);
 
     const { data, error: insertError } = await supabase
       .from('consultations')
@@ -116,7 +135,7 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
             value={studentIndex}
             onChange={(e) => {
               setStudentIndex(e.target.value);
-              if (e.target.value.trim()) setIndexTouched(false);
+              if (INDEX_REGEX.test(e.target.value.trim())) setIndexTouched(false);
             }}
             onBlur={() => setIndexTouched(true)}
             placeholder="ICT/XX/XXX"
@@ -130,7 +149,7 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
         </div>
         {indexError && (
           <p className="mt-1.5 text-xs font-medium text-red-500">
-            Student Index Number is required.
+            {indexErrorMsg}
           </p>
         )}
       </div>
@@ -187,6 +206,7 @@ export default function BookingForm({ onSuccess }: BookingFormProps) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              min={today}
               required
               className={inputBase}
             />
